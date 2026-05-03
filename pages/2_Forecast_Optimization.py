@@ -143,18 +143,15 @@ def load_df_real():
 
 df_real, from_session = load_df_real()
 
-# Add realistic time-of-day behavior to the underlying real data.
+# Add realistic time-of-day behavior to the underlying real data (multiplicative).
+# Only apply when the data did not already come from the main app (and wasn't adjusted).
 if not (from_session and st.session_state.get("df_real_time_adjusted", False)):
-    evening_boost = np.where(
-        (df_real.index.hour >= 18) & (df_real.index.hour <= 22), 10, 0
-    )
-    night_reduction = np.where(
-        (df_real.index.hour >= 0) & (df_real.index.hour <= 5), 10, 0
-    )
-    df_real["Energy"] += evening_boost
-    df_real["Energy"] -= night_reduction
-
-st.session_state["df_real_time_adjusted"] = True
+    hour_idx = df_real.index.hour
+    df_real.loc[(hour_idx >= 6) & (hour_idx < 12), "Energy"] *= 1.1
+    df_real.loc[(hour_idx >= 12) & (hour_idx < 18), "Energy"] *= 1.2
+    df_real.loc[(hour_idx >= 18) & (hour_idx < 22), "Energy"] *= 1.4
+    df_real.loc[(hour_idx >= 0) & (hour_idx < 6), "Energy"] *= 0.6
+    st.session_state["df_real_time_adjusted"] = True
 
 # ---------------- FORECAST ----------------
 # Fixed 24-hour forecast (no slider required)
@@ -187,14 +184,14 @@ forecast_df = pd.DataFrame(
     }
 )
 
-# Add realistic time-of-day behavior to forecasted energy as well.
-forecast_df["hour"] = forecast_df["Datetime"].dt.hour
-forecast_df["Energy"] += np.where(
-    (forecast_df["hour"] >= 18) & (forecast_df["hour"] <= 22), 10, 0
-)
-forecast_df["Energy"] -= np.where(
-    (forecast_df["hour"] >= 0) & (forecast_df["hour"] <= 5), 10, 0
-)
+# Add realistic time-of-day behavior to forecasted energy as multiplicative factors,
+# but only if the historical data wasn't already adjusted by the main app.
+if not (from_session and st.session_state.get("df_real_time_adjusted", False)):
+    hour = forecast_df["Datetime"].dt.hour
+    forecast_df.loc[(hour >= 6) & (hour < 12), "Energy"] *= 1.1
+    forecast_df.loc[(hour >= 12) & (hour < 18), "Energy"] *= 1.2
+    forecast_df.loc[(hour >= 18) & (hour < 22), "Energy"] *= 1.4
+    forecast_df.loc[(hour >= 0) & (hour < 6), "Energy"] *= 0.6
 
 # store forecast in session so main app can access it
 st.session_state["forecast_df"] = forecast_df
