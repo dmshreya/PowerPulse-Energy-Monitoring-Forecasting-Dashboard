@@ -887,16 +887,14 @@ hour = df_real.index.hour
 # Base energy from temperature
 df_real["Energy"] = 40 + df_real["Temperature"] * 1.5
 
-# Smooth realistic behavior (NOT fixed peaks)
-df_real["Energy"] *= (
-    1
-    + 0.15 * np.sin((hour - 14) * np.pi / 12)  # afternoon influence
-    + 0.20 * np.sin((hour - 19) * np.pi / 12)  # evening influence
-)
+# Balanced human behavior (NOT overpowering)
+df_real.loc[(hour >= 6) & (hour < 12), "Energy"] *= 1.05  # morning
+df_real.loc[(hour >= 12) & (hour < 17), "Energy"] *= 1.15  # afternoon
+df_real.loc[(hour >= 17) & (hour < 21), "Energy"] *= 1.25  # evening peak (reduced)
+df_real.loc[(hour >= 0) & (hour < 6), "Energy"] *= 0.75  # night low (not too low)
 
-# Small noise (stable)
-df_real["Energy"] += np.random.normal(0, 0.3, len(df_real))
-
+# VERY small noise
+df_real["Energy"] += np.random.normal(0, 0.2, len(df_real))
 st.session_state.df_real = df_real
 st.session_state["df_real_time_adjusted"] = True
 # ==================== TOP SUMMARY (METRICS CARDS) ====================
