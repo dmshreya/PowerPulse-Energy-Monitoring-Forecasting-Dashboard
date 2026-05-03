@@ -887,19 +887,14 @@ hour = df_real.index.hour
 # Base energy from temperature
 df_real["Energy"] = 40 + df_real["Temperature"] * 1.5
 
-# 🌅 Morning (6–12) → medium usage
-df_real.loc[(hour >= 6) & (hour < 12), "Energy"] *= 1.1
+# Smooth realistic behavior (NOT fixed peaks)
+df_real["Energy"] *= (
+    1
+    + 0.15 * np.sin((hour - 14) * np.pi / 12)  # afternoon influence
+    + 0.20 * np.sin((hour - 19) * np.pi / 12)  # evening influence
+)
 
-# ☀️ Afternoon (12–18) → higher usage (due to heat)
-df_real.loc[(hour >= 12) & (hour < 18), "Energy"] *= 1.2
-
-# 🌇 Evening (18–22) → peak usage (people at home)
-df_real.loc[(hour >= 18) & (hour < 22), "Energy"] *= 1.4
-
-# 🌙 Night (0–6) → lowest usage
-df_real.loc[(hour >= 0) & (hour < 6), "Energy"] *= 0.6
-
-# Optional: very small variation (stable)
+# Small noise (stable)
 df_real["Energy"] += np.random.normal(0, 0.3, len(df_real))
 
 st.session_state.df_real = df_real
