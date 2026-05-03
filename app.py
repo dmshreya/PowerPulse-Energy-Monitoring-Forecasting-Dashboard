@@ -785,17 +785,22 @@ def render_energy_table(
                 lambda x: "" if pd.isna(x) else f"{x:.2f}"
             )
 
+    if "Energy" in df_display.columns:
+        df_display["Energy"] = df_display["Energy"].astype(str) + " kWh"
+
     if "Datetime" in df_display.columns:
 
         def build_tag(row):
-            row_time = pd.to_datetime(row["Datetime"]).floor("h")
+            row_time = pd.to_datetime(row["Datetime"]).replace(
+                minute=0, second=0, microsecond=0
+            )
             if mark_peak_time is not None and row_time == pd.to_datetime(
                 mark_peak_time
-            ).floor("h"):
+            ).replace(minute=0, second=0, microsecond=0):
                 return "🔥 Peak"
             if mark_low_time is not None and row_time == pd.to_datetime(
                 mark_low_time
-            ).floor("h"):
+            ).replace(minute=0, second=0, microsecond=0):
                 return "❄️ Low"
             return ""
 
@@ -813,14 +818,16 @@ def render_energy_table(
         row_time = None
         if "Datetime" in row.index:
             try:
-                row_time = pd.to_datetime(row["Datetime"]).floor("h")
+                row_time = pd.to_datetime(row["Datetime"]).replace(
+                    minute=0, second=0, microsecond=0
+                )
             except Exception:
                 row_time = None
 
         if row_time is not None:
             if mark_peak_time is not None and row_time == pd.to_datetime(
                 mark_peak_time
-            ).floor("h"):
+            ).replace(minute=0, second=0, microsecond=0):
                 row_style = (
                     "background-color: #FFB3B3; color: #7F1D1D; font-weight: 700;"
                 )
@@ -830,7 +837,7 @@ def render_energy_table(
                 )
             elif mark_low_time is not None and row_time == pd.to_datetime(
                 mark_low_time
-            ).floor("h"):
+            ).replace(minute=0, second=0, microsecond=0):
                 row_style = (
                     "background-color: #A7F3D0; color: #14532D; font-weight: 700;"
                 )
@@ -978,6 +985,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+st.caption("⚠️ Energy values are estimated based on temperature and usage patterns.")
+
 fig = go.Figure()
 
 fig.add_trace(
@@ -1027,6 +1036,10 @@ st.plotly_chart(fig, use_container_width=True)
 st.markdown(
     "<p class='caption-text'>📊 Real-time energy consumption trend for the last 48 hours</p>",
     unsafe_allow_html=True,
+)
+
+st.markdown(
+    "📊 Energy is calculated using temperature + human activity patterns (morning, evening peaks)."
 )
 
 st.markdown("---")

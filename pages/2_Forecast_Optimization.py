@@ -184,14 +184,12 @@ forecast_df = pd.DataFrame(
     }
 )
 
-# Add realistic time-of-day behavior to forecasted energy as multiplicative factors,
-# but only if the historical data wasn't already adjusted by the main app.
-if not (from_session and st.session_state.get("df_real_time_adjusted", False)):
-    hour = forecast_df["Datetime"].dt.hour
-    forecast_df.loc[(hour >= 6) & (hour < 12), "Energy"] *= 1.1
-    forecast_df.loc[(hour >= 12) & (hour < 18), "Energy"] *= 1.2
-    forecast_df.loc[(hour >= 18) & (hour < 22), "Energy"] *= 1.4
-    forecast_df.loc[(hour >= 0) & (hour < 6), "Energy"] *= 0.6
+# Add realistic time-of-day behavior to forecasted energy as multiplicative factors.
+hour = forecast_df["Datetime"].dt.hour
+forecast_df.loc[(hour >= 6) & (hour < 12), "Energy"] *= 1.1
+forecast_df.loc[(hour >= 12) & (hour < 18), "Energy"] *= 1.2
+forecast_df.loc[(hour >= 18) & (hour < 22), "Energy"] *= 1.4
+forecast_df.loc[(hour >= 0) & (hour < 6), "Energy"] *= 0.6
 
 # store forecast in session so main app can access it
 st.session_state["forecast_df"] = forecast_df
@@ -272,17 +270,22 @@ def render_energy_table(
                 lambda x: "" if pd.isna(x) else f"{x:.2f}"
             )
 
+    if "Energy" in df_display.columns:
+        df_display["Energy"] = df_display["Energy"].astype(str) + " kWh"
+
     if "Datetime" in df_display.columns:
 
         def build_tag(row):
-            row_time = pd.to_datetime(row["Datetime"]).floor("h")
+            row_time = pd.to_datetime(row["Datetime"]).replace(
+                minute=0, second=0, microsecond=0
+            )
             if mark_peak_time is not None and row_time == pd.to_datetime(
                 mark_peak_time
-            ).floor("h"):
+            ).replace(minute=0, second=0, microsecond=0):
                 return "🔥 Peak"
             if mark_low_time is not None and row_time == pd.to_datetime(
                 mark_low_time
-            ).floor("h"):
+            ).replace(minute=0, second=0, microsecond=0):
                 return "❄️ Low"
             return ""
 
@@ -300,14 +303,16 @@ def render_energy_table(
         row_time = None
         if "Datetime" in row.index:
             try:
-                row_time = pd.to_datetime(row["Datetime"]).floor("h")
+                row_time = pd.to_datetime(row["Datetime"]).replace(
+                    minute=0, second=0, microsecond=0
+                )
             except Exception:
                 row_time = None
 
         if row_time is not None:
             if mark_peak_time is not None and row_time == pd.to_datetime(
                 mark_peak_time
-            ).floor("h"):
+            ).replace(minute=0, second=0, microsecond=0):
                 row_style = (
                     "background-color: #FFB3B3; color: #7F1D1D; font-weight: 700;"
                 )
@@ -317,7 +322,7 @@ def render_energy_table(
                 )
             elif mark_low_time is not None and row_time == pd.to_datetime(
                 mark_low_time
-            ).floor("h"):
+            ).replace(minute=0, second=0, microsecond=0):
                 row_style = (
                     "background-color: #A7F3D0; color: #14532D; font-weight: 700;"
                 )
@@ -368,13 +373,17 @@ forecast_table = (
 
 forecast_table["Tag"] = ""
 forecast_table.loc[
-    forecast_table["Datetime"].dt.floor("h")
-    == pd.Timestamp(forecast_peak_time).floor("h"),
+    forecast_table["Datetime"].apply(
+        lambda ts: pd.to_datetime(ts).replace(minute=0, second=0, microsecond=0)
+    )
+    == pd.Timestamp(forecast_peak_time).replace(minute=0, second=0, microsecond=0),
     "Tag",
 ] = "🔥 Peak"
 forecast_table.loc[
-    forecast_table["Datetime"].dt.floor("h")
-    == pd.Timestamp(forecast_low_time).floor("h"),
+    forecast_table["Datetime"].apply(
+        lambda ts: pd.to_datetime(ts).replace(minute=0, second=0, microsecond=0)
+    )
+    == pd.Timestamp(forecast_low_time).replace(minute=0, second=0, microsecond=0),
     "Tag",
 ] = "❄️ Low"
 
