@@ -242,11 +242,13 @@ def render_energy_table(
             "%Y-%m-%d %H:%M"
         )
 
-    # Keep table values clean and readable (no long decimals).
+    # Keep table values clean and readable with 2 decimal places.
     for col in df_display.columns:
         if pd.api.types.is_numeric_dtype(df_display[col]):
-            df_display[col] = pd.to_numeric(df_display[col], errors="coerce").round(0)
-            df_display[col] = df_display[col].astype("Int64")
+            df_display[col] = pd.to_numeric(df_display[col], errors="coerce").round(2)
+            df_display[col] = df_display[col].map(
+                lambda x: "" if pd.isna(x) else f"{x:.2f}"
+            )
 
     if "Datetime" in df_display.columns:
 
