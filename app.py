@@ -884,7 +884,15 @@ df_real = df[df.index <= now].copy()
 
 df_real["Energy"] = 50 + df_real["Temperature"] * 2
 df_real["Energy"] += np.random.normal(0, 1, len(df_real))
+
+# Add realistic time-of-day behavior to the underlying data.
+evening_boost = np.where((df_real.index.hour >= 18) & (df_real.index.hour <= 22), 10, 0)
+night_reduction = np.where((df_real.index.hour >= 0) & (df_real.index.hour <= 5), 10, 0)
+df_real["Energy"] += evening_boost
+df_real["Energy"] -= night_reduction
+
 st.session_state.df_real = df_real
+st.session_state["df_real_time_adjusted"] = True
 # ==================== TOP SUMMARY (METRICS CARDS) ====================
 st.markdown(
     f'<div class="section-header">📍 {city} - Live Overview</div>',

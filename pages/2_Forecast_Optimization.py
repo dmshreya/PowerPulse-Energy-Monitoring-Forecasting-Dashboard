@@ -107,9 +107,12 @@ st.markdown(
 
 
 def load_df_real():
+    from_session = False
+
     # Prefer session state if available, otherwise fall back to live_data.csv
     if "df_real" in st.session_state:
         df = st.session_state.df_real.copy()
+        from_session = True
     else:
         try:
             df = pd.read_csv(
@@ -135,10 +138,23 @@ def load_df_real():
     if not isinstance(df.index, pd.DatetimeIndex):
         df.index = pd.to_datetime(df.index)
     df = df.sort_index()
-    return df
+    return df, from_session
 
 
-df_real = load_df_real()
+df_real, from_session = load_df_real()
+
+# Add realistic time-of-day behavior to the underlying real data.
+if not (from_session and st.session_state.get("df_real_time_adjusted", False)):
+    evening_boost = np.where(
+        (df_real.index.hour >= 18) & (df_real.index.hour <= 22), 10, 0
+    )
+    night_reduction = np.where(
+        (df_real.index.hour >= 0) & (df_real.index.hour <= 5), 10, 0
+    )
+    df_real["Energy"] += evening_boost
+    df_real["Energy"] -= night_reduction
+
+st.session_state["df_real_time_adjusted"] = True
 
 # ---------------- FORECAST ----------------
 # Fixed 24-hour forecast (no slider required)
@@ -169,6 +185,15 @@ forecast_df = pd.DataFrame(
         "Temperature": temp_forecast,
         "Energy": forecast,
     }
+)
+
+# Add realistic time-of-day behavior to forecasted energy as well.
+forecast_df["hour"] = forecast_df["Datetime"].dt.hour
+forecast_df["Energy"] += np.where(
+    (forecast_df["hour"] >= 18) & (forecast_df["hour"] <= 22), 10, 0
+)
+forecast_df["Energy"] -= np.where(
+    (forecast_df["hour"] >= 0) & (forecast_df["hour"] <= 5), 10, 0
 )
 
 # store forecast in session so main app can access it
