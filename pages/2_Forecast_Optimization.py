@@ -242,6 +242,12 @@ def render_energy_table(
             "%Y-%m-%d %H:%M"
         )
 
+    # Keep table values clean and readable (no long decimals).
+    for col in df_display.columns:
+        if pd.api.types.is_numeric_dtype(df_display[col]):
+            df_display[col] = pd.to_numeric(df_display[col], errors="coerce").round(0)
+            df_display[col] = df_display[col].astype("Int64")
+
     if "Datetime" in df_display.columns:
 
         def build_tag(row):
@@ -264,7 +270,7 @@ def render_energy_table(
     for _, row in df_display.iterrows():
         row_style = "background-color: #F8F6FF; color: #2D1B4E;"
         cell_style = (
-            "border: 1px solid #E9D5FF; padding: 10px; text-align: center; "
+            "border: 1px solid #E9D5FF; padding: 10px; text-align: center; white-space: nowrap; "
             "background-color: #F8F6FF; color: #2D1B4E;"
         )
         row_time = None
@@ -282,7 +288,7 @@ def render_energy_table(
                     "background-color: #FFB3B3; color: #7F1D1D; font-weight: 700;"
                 )
                 cell_style = (
-                    "border: 1px solid #E9D5FF; padding: 10px; text-align: center; "
+                    "border: 1px solid #E9D5FF; padding: 10px; text-align: center; white-space: nowrap; "
                     "background-color: #FFB3B3; color: #7F1D1D; font-weight: 700;"
                 )
             elif mark_low_time is not None and row_time == pd.to_datetime(
@@ -292,22 +298,23 @@ def render_energy_table(
                     "background-color: #A7F3D0; color: #14532D; font-weight: 700;"
                 )
                 cell_style = (
-                    "border: 1px solid #E9D5FF; padding: 10px; text-align: center; "
+                    "border: 1px solid #E9D5FF; padding: 10px; text-align: center; white-space: nowrap; "
                     "background-color: #A7F3D0; color: #14532D; font-weight: 700;"
                 )
 
         cells = []
         for value in row.tolist():
-            cells.append(f"<td style='{cell_style}'>{html.escape(str(value))}</td>")
+            cell_value = "" if pd.isna(value) else str(value)
+            cells.append(f"<td style='{cell_style}'>{html.escape(cell_value)}</td>")
         table_rows.append(f"<tr style='{row_style}'>{''.join(cells)}</tr>")
 
     header_html = "".join(
-        f"<th style='background: linear-gradient(90deg, #7C3AED 0%, #A78BFA 100%); color: white; font-weight: 700; border: 1px solid #C4B5FD; padding: 12px; text-align: center;'>{html.escape(str(header))}</th>"
+        f"<th style='background: linear-gradient(90deg, #7C3AED 0%, #A78BFA 100%); color: white; font-weight: 700; border: 1px solid #C4B5FD; padding: 12px; text-align: center; white-space: nowrap;'>{html.escape(str(header))}</th>"
         for header in headers
     )
 
     table_html = f"""
-    <table style='border-collapse: collapse; width: 100%; background: #FFFFFF;'>
+    <table style='border-collapse: collapse; width: 100%; background: #FFFFFF; table-layout: auto;'>
         <thead>
             <tr>{header_html}</tr>
         </thead>
