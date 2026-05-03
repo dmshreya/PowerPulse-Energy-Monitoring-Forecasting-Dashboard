@@ -245,14 +245,14 @@ def render_energy_table(
     if "Datetime" in df_display.columns:
 
         def build_tag(row):
-            row_time = pd.to_datetime(row["Datetime"]).floor("H")
+            row_time = pd.to_datetime(row["Datetime"]).floor("h")
             if mark_peak_time is not None and row_time == pd.to_datetime(
                 mark_peak_time
-            ).floor("H"):
+            ).floor("h"):
                 return "🔥 Peak"
             if mark_low_time is not None and row_time == pd.to_datetime(
                 mark_low_time
-            ).floor("H"):
+            ).floor("h"):
                 return "❄️ Low"
             return ""
 
@@ -270,14 +270,14 @@ def render_energy_table(
         row_time = None
         if "Datetime" in row.index:
             try:
-                row_time = pd.to_datetime(row["Datetime"]).floor("H")
+                row_time = pd.to_datetime(row["Datetime"]).floor("h")
             except Exception:
                 row_time = None
 
         if row_time is not None:
             if mark_peak_time is not None and row_time == pd.to_datetime(
                 mark_peak_time
-            ).floor("H"):
+            ).floor("h"):
                 row_style = (
                     "background-color: #FFB3B3; color: #7F1D1D; font-weight: 700;"
                 )
@@ -287,7 +287,7 @@ def render_energy_table(
                 )
             elif mark_low_time is not None and row_time == pd.to_datetime(
                 mark_low_time
-            ).floor("H"):
+            ).floor("h"):
                 row_style = (
                     "background-color: #A7F3D0; color: #14532D; font-weight: 700;"
                 )
@@ -298,9 +298,7 @@ def render_energy_table(
 
         cells = []
         for value in row.tolist():
-            cells.append(
-                f"<td style='{cell_style}'>{html.escape(str(value))}</td>"
-            )
+            cells.append(f"<td style='{cell_style}'>{html.escape(str(value))}</td>")
         table_rows.append(f"<tr style='{row_style}'>{''.join(cells)}</tr>")
 
     header_html = "".join(
@@ -339,13 +337,13 @@ forecast_table = (
 
 forecast_table["Tag"] = ""
 forecast_table.loc[
-    forecast_table["Datetime"].dt.floor("H")
-    == pd.Timestamp(forecast_peak_time).floor("H"),
+    forecast_table["Datetime"].dt.floor("h")
+    == pd.Timestamp(forecast_peak_time).floor("h"),
     "Tag",
 ] = "🔥 Peak"
 forecast_table.loc[
-    forecast_table["Datetime"].dt.floor("H")
-    == pd.Timestamp(forecast_low_time).floor("H"),
+    forecast_table["Datetime"].dt.floor("h")
+    == pd.Timestamp(forecast_low_time).floor("h"),
     "Tag",
 ] = "❄️ Low"
 
