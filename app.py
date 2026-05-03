@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests
 import numpy as np
+import html
 from statsmodels.tsa.arima.model import ARIMA
 import plotly.graph_objects as go
 import time
@@ -771,86 +772,93 @@ def render_energy_table(
     ):
         df_display = df.reset_index()
 
-    def highlight_key_insight_rows(row):
-        if "Datetime" not in row.index:
-            return [""] * len(row)
-
-        try:
-            row_time = pd.Timestamp(row["Datetime"]).floor("H")
-
-            if mark_peak_time is not None:
-                peak_time_normalized = pd.Timestamp(mark_peak_time).floor("H")
-                if row_time == peak_time_normalized:
-                    return [
-                        "background-color: #FFD1D1 !important; color: #7F1D1D !important; font-weight: 700;"
-                    ] * len(row)
-
-            if mark_low_time is not None:
-                low_time_normalized = pd.Timestamp(mark_low_time).floor("H")
-                if row_time == low_time_normalized:
-                    return [
-                        "background-color: #D3F9D8 !important; color: #14532D !important; font-weight: 700;"
-                    ] * len(row)
-        except Exception:
-            pass
-
-        return [""] * len(row)
-
-    styled = (
-        df_display.style.format(precision=2)
-        .hide(axis="index")
-        .set_table_styles(
-            [
-                {
-                    "selector": "table",
-                    "props": [
-                        ("border-collapse", "collapse"),
-                        ("width", "100%"),
-                        ("background-color", "#FFFFFF"),
-                    ],
-                },
-                {
-                    "selector": "th",
-                    "props": [
-                        (
-                            "background",
-                            "linear-gradient(90deg, #7C3AED 0%, #A78BFA 100%)",
-                        ),
-                        ("color", "white"),
-                        ("font-weight", "700"),
-                        ("border", "1px solid #C4B5FD"),
-                        ("padding", "12px"),
-                        ("text-align", "center"),
-                    ],
-                },
-                {
-                    "selector": "td",
-                    "props": [
-                        ("background-color", "#F8F6FF"),
-                        ("color", "#2D1B4E"),
-                        ("border", "1px solid #E9D5FF"),
-                        ("padding", "10px"),
-                        ("font-weight", "500"),
-                        ("text-align", "center"),
-                    ],
-                },
-                {
-                    "selector": "tr:nth-child(even) td",
-                    "props": [("background-color", "#FFFFFF")],
-                },
-                {"selector": "tr:hover td", "props": [("background-color", "#EDE9FE")]},
-            ]
+    if "Datetime" in df_display.columns:
+        df_display["Datetime"] = pd.to_datetime(df_display["Datetime"]).dt.strftime(
+            "%Y-%m-%d %H:%M"
         )
-        .apply(highlight_key_insight_rows, axis=1)
+
+    if "Datetime" in df_display.columns:
+
+        def build_tag(row):
+            row_time = pd.to_datetime(row["Datetime"]).floor("H")
+            if mark_peak_time is not None and row_time == pd.to_datetime(
+                mark_peak_time
+            ).floor("H"):
+                return "🔥 Peak"
+            if mark_low_time is not None and row_time == pd.to_datetime(
+                mark_low_time
+            ).floor("H"):
+                return "❄️ Low"
+            return ""
+
+        df_display["Tag"] = df_display.apply(build_tag, axis=1)
+
+    headers = list(df_display.columns)
+    table_rows = []
+
+    for _, row in df_display.iterrows():
+        row_style = "background-color: #F8F6FF; color: #2D1B4E;"
+        cell_style = (
+            "border: 1px solid #E9D5FF; padding: 10px; text-align: center; "
+            "background-color: #F8F6FF; color: #2D1B4E;"
+        )
+        row_time = None
+        if "Datetime" in row.index:
+            try:
+                row_time = pd.to_datetime(row["Datetime"]).floor("H")
+            except Exception:
+                row_time = None
+
+        if row_time is not None:
+            if mark_peak_time is not None and row_time == pd.to_datetime(
+                mark_peak_time
+            ).floor("H"):
+                row_style = (
+                    "background-color: #FFB3B3; color: #7F1D1D; font-weight: 700;"
+                )
+                cell_style = (
+                    "border: 1px solid #E9D5FF; padding: 10px; text-align: center; "
+                    "background-color: #FFB3B3; color: #7F1D1D; font-weight: 700;"
+                )
+            elif mark_low_time is not None and row_time == pd.to_datetime(
+                mark_low_time
+            ).floor("H"):
+                row_style = (
+                    "background-color: #A7F3D0; color: #14532D; font-weight: 700;"
+                )
+                cell_style = (
+                    "border: 1px solid #E9D5FF; padding: 10px; text-align: center; "
+                    "background-color: #A7F3D0; color: #14532D; font-weight: 700;"
+                )
+
+        cells = []
+        for value in row.tolist():
+            cells.append(
+                f"<td style='{cell_style}'>{html.escape(str(value))}</td>"
+            )
+        table_rows.append(f"<tr style='{row_style}'>{''.join(cells)}</tr>")
+
+    header_html = "".join(
+        f"<th style='background: linear-gradient(90deg, #7C3AED 0%, #A78BFA 100%); color: white; font-weight: 700; border: 1px solid #C4B5FD; padding: 12px; text-align: center;'>{html.escape(str(header))}</th>"
+        for header in headers
     )
+
+    table_html = f"""
+    <table style='border-collapse: collapse; width: 100%; background: #FFFFFF;'>
+        <thead>
+            <tr>{header_html}</tr>
+        </thead>
+        <tbody>
+            {''.join(table_rows)}
+        </tbody>
+    </table>
+    """
 
     st.markdown(
         f"<div class='table-title'>{title}</div>",
         unsafe_allow_html=True,
     )
-    st.markdown(
-        f"<div class='table-card'>{styled.to_html()}</div>", unsafe_allow_html=True
-    )
+    st.markdown(f"<div class='table-card'>{table_html}</div>", unsafe_allow_html=True)
 
 
 df = fetch_data(lat, lon)
@@ -1089,6 +1097,19 @@ with st.expander("📊 View Detailed Data & Analytics"):
             mark_peak_time=recent_peak_time,
             mark_low_time=recent_low_time,
         )
+
+        recent_energy_table_display = recent_energy_table.reset_index()
+        recent_energy_table_display["Tag"] = ""
+        recent_energy_table_display.loc[
+            recent_energy_table_display["Datetime"].dt.floor("H")
+            == pd.Timestamp(recent_peak_time).floor("H"),
+            "Tag",
+        ] = "🔥 Peak"
+        recent_energy_table_display.loc[
+            recent_energy_table_display["Datetime"].dt.floor("H")
+            == pd.Timestamp(recent_low_time).floor("H"),
+            "Tag",
+        ] = "❄️ Low"
 
         # Color legend
         st.markdown(
