@@ -1058,6 +1058,10 @@ fig_hourly.add_trace(
         x=hourly_avg.index,
         y=hourly_avg.values,
         marker=dict(color="#7C3AED"),
+        text=[f"{value:.1f}" for value in hourly_avg.values],
+        textposition="outside",
+        textfont=dict(color="#2D1B4E", size=12, family="Arial"),
+        cliponaxis=False,
         hovertemplate="Hour: %{x}:00<br>Avg Energy: %{y:.1f} kWh<extra></extra>",
     )
 )
@@ -1069,6 +1073,8 @@ fig_hourly.update_layout(
     plot_bgcolor="white",
     paper_bgcolor="white",
     font=dict(color="#2D1B4E"),
+    uniformtext_minsize=10,
+    uniformtext_mode="show",
 )
 
 st.plotly_chart(fig_hourly, use_container_width=True)
