@@ -1042,6 +1042,39 @@ st.markdown(
     "📊 Energy is calculated using temperature + human activity patterns (morning, evening peaks)."
 )
 
+# ==================== HOURLY ENERGY PATTERN ====================
+st.markdown(
+    '<div class="section-header">⏱️ Hourly Energy Pattern</div>',
+    unsafe_allow_html=True,
+)
+
+# Group data by hour
+hourly_avg = df_real.groupby(df_real.index.hour)["Energy"].mean()
+
+fig_hourly = go.Figure()
+
+fig_hourly.add_trace(
+    go.Bar(
+        x=hourly_avg.index,
+        y=hourly_avg.values,
+        marker=dict(color="#7C3AED"),
+        hovertemplate="Hour: %{x}:00<br>Avg Energy: %{y:.1f} kWh<extra></extra>",
+    )
+)
+
+fig_hourly.update_layout(
+    height=400,
+    xaxis_title="Hour of Day",
+    yaxis_title="Average Energy (kWh)",
+    plot_bgcolor="white",
+    paper_bgcolor="white",
+    font=dict(color="#2D1B4E"),
+)
+
+st.plotly_chart(fig_hourly, use_container_width=True)
+
+st.caption("📊 Shows average energy usage pattern across different hours of the day.")
+
 st.markdown("---")
 
 # ==================== FORECAST ====================
