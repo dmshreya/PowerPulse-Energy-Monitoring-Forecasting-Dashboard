@@ -1075,6 +1075,11 @@ fig_hourly.update_layout(
     font=dict(color="#2D1B4E"),
     uniformtext_minsize=10,
     uniformtext_mode="show",
+    hoverlabel=dict(
+        bgcolor="#FFFFFF",
+        font=dict(color="#2D1B4E", size=13, family="Arial"),
+        bordercolor="#C4B5FD",
+    ),
 )
 
 st.plotly_chart(fig_hourly, use_container_width=True)
